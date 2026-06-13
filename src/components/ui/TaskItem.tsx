@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Check, Trash2 } from 'lucide-react';
 import type { Task } from '@/types';
 import { useTaskStore } from '@/lib/store';
-import { getDelayDays, getDelayColor, shouldShowAsCompleted } from '@/lib/taskUtils';
+import { getDelayDays, getDelayColor, shouldShowAsCompleted, isTaskEditable, getOriginalDayHighlight } from '@/lib/taskUtils';
 import { parseISO } from 'date-fns';
 import { isSameDay } from '@/lib/dateUtils';
 
@@ -28,12 +28,24 @@ export default function TaskItem({ task, viewingDate }: TaskItemProps) {
     itemClass = 'carried-forward';
   }
 
+  const isEditable = isTaskEditable(viewingDate);
+  const highlight = getOriginalDayHighlight(task, viewingDate);
+
+  let highlightClass = '';
+  if (highlight === 'orange') {
+    highlightClass = 'delayed-highlight-orange';
+  } else if (highlight === 'red') {
+    highlightClass = 'delayed-highlight-red';
+  }
+
   const delayDays = getDelayDays(task, viewingDate);
   const showDelayDot = !task.completed && delayDays > 0;
   const delayColor = getDelayColor(delayDays);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isEditable) return;
+
     if (!task.completed) {
       setJustChecked(true);
       setTimeout(() => setJustChecked(false), 300);
@@ -48,11 +60,12 @@ export default function TaskItem({ task, viewingDate }: TaskItemProps) {
 
   return (
     <div 
-      className={`task-item ${itemClass}`}
-      onClick={handleToggle}
+      className={`task-item ${itemClass} ${highlightClass} ${!isEditable ? 'readonly' : ''}`}
+      onClick={isEditable ? handleToggle : undefined}
     >
       <div 
-        className={`task-checkbox ${task.completed ? 'checked' : ''} ${justChecked ? 'just-checked' : ''}`}
+        className={`task-checkbox ${task.completed ? 'checked' : ''} ${justChecked ? 'just-checked' : ''} ${!isEditable ? 'disabled' : ''}`}
+        title={!isEditable ? "Toggling task is only allowed for yesterday, today, or tomorrow" : undefined}
       >
         {task.completed && <Check />}
       </div>

@@ -3,7 +3,7 @@
 import React from 'react';
 import { useTaskStore } from '@/lib/store';
 import { getMonthWeeks, isToday } from '@/lib/dateUtils';
-import { getTasksForDate, getDelayDays, getDelayColor } from '@/lib/taskUtils';
+import { getTasksForDate, getDelayDays, getDelayColor, isTaskEditable } from '@/lib/taskUtils';
 import { format } from 'date-fns';
 
 export default function MonthView() {
@@ -35,6 +35,7 @@ export default function MonthView() {
         const isCurrentMonth = date.getMonth() === currentDate.getMonth();
         const dayTasks = getTasksForDate(tasks, date);
         const visibleTasks = dayTasks;
+        const isEditable = isTaskEditable(date);
 
         return (
           <div
@@ -54,12 +55,21 @@ export default function MonthView() {
                   <div
                     key={task.id}
                     className={`month-task-dot ${task.completed ? 'completed' : ''}`}
-                    title={`${task.title} (Click to toggle completion)`}
+                    title={
+                      isEditable 
+                        ? `${task.title} (Click to toggle completion)`
+                        : `${task.title} (Read-only: outside edit window)`
+                    }
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleTask(task.id);
+                      if (isEditable) {
+                        toggleTask(task.id);
+                      }
                     }}
-                    style={{ cursor: 'pointer' }}
+                    style={{ 
+                      cursor: isEditable ? 'pointer' : 'default',
+                      opacity: isEditable ? 1 : 0.7
+                    }}
                   >
                     <span
                       className="month-task-dot-icon"

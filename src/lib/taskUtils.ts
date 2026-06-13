@@ -196,3 +196,34 @@ export function shouldShowAsCompleted(task: Task, date: Date): boolean {
     end: startOfDay(weekEnd),
   });
 }
+
+/**
+ * Returns true if the task can be checked/unchecked on the viewing date.
+ * Toggling is only permitted if the viewingDate is within [-1, 0, 1] days of today.
+ */
+export function isTaskEditable(viewingDate: Date): boolean {
+  const today = startOfDay(new Date());
+  const target = startOfDay(viewingDate);
+  const diff = differenceInCalendarDays(target, today);
+  return diff >= -1 && diff <= 1;
+}
+
+/**
+ * Returns 'orange' if the task is viewed on its original due date and the days gap from today is <= 3 days.
+ * Returns 'red' if the gap is > 3 days.
+ * Returns null if the task is completed, viewed on a different day, or not overdue.
+ */
+export function getOriginalDayHighlight(task: Task, viewingDate: Date): 'orange' | 'red' | null {
+  if (task.completed) return null;
+
+  const originalDue = startOfDay(parseISO(task.dueDate));
+  if (!isSameDay(originalDue, startOfDay(viewingDate))) return null;
+
+  const today = startOfDay(new Date());
+  const gap = differenceInCalendarDays(today, originalDue);
+
+  if (gap <= 0) return null; // not overdue relative to today
+
+  return gap <= 3 ? 'orange' : 'red';
+}
+

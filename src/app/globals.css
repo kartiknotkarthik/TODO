@@ -623,6 +623,38 @@ input, textarea {
   height: 14px;
 }
 
+/* --- Task Delayed Highlights & Disabled Edit States --- */
+.task-item.delayed-highlight-orange {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-left: 3px solid var(--amber-500);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-left: 8px;
+}
+
+.task-item.delayed-highlight-red {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border-left: 3px solid var(--red-500);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-left: 8px;
+}
+
+.task-item.readonly {
+  cursor: default !important;
+}
+
+.task-item.readonly:hover {
+  background: transparent !important;
+}
+
+.task-checkbox.disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  background: var(--slate-100);
+}
+
+
 /* --- Bottom Panels --- */
 .bottom-panels {
   display: grid;
@@ -1156,3 +1188,60 @@ input, textarea {
   height: 32px;
   color: var(--slate-300);
 }
+
+/* --- Add Task Modal Extensions --- */
+.modal-radio-group {
+  display: flex;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.modal-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--slate-700);
+  cursor: pointer;
+}
+
+.modal-radio-label input {
+  cursor: pointer;
+}
+
+.weekday-selector {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.weekday-pill {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--slate-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--slate-600);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: white;
+}
+
+.weekday-pill:hover {
+  border-color: var(--blue-400);
+  color: var(--blue-600);
+  background: var(--blue-50);
+}
+
+.weekday-pill.active {
+  background: var(--blue-600);
+  color: white;
+  border-color: var(--blue-600);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
