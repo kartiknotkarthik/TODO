@@ -11,6 +11,7 @@ export default function MonthView() {
   const tasks = useTaskStore((state) => state.tasks);
   const setCurrentDate = useTaskStore((state) => state.setCurrentDate);
   const setViewMode = useTaskStore((state) => state.setViewMode);
+  const toggleTask = useTaskStore((state) => state.toggleTask);
 
   const weeks = getMonthWeeks(currentDate);
   const headers = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -33,11 +34,7 @@ export default function MonthView() {
       {weeks.flat().map((date) => {
         const isCurrentMonth = date.getMonth() === currentDate.getMonth();
         const dayTasks = getTasksForDate(tasks, date);
-        
-        // Show up to 2 tasks, overflow to "+ X more"
-        const maxTasksToShow = 2;
-        const visibleTasks = dayTasks.slice(0, maxTasksToShow);
-        const remainingTasks = dayTasks.length - maxTasksToShow;
+        const visibleTasks = dayTasks;
 
         return (
           <div
@@ -57,7 +54,12 @@ export default function MonthView() {
                   <div
                     key={task.id}
                     className={`month-task-dot ${task.completed ? 'completed' : ''}`}
-                    title={task.title}
+                    title={`${task.title} (Click to toggle completion)`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTask(task.id);
+                    }}
+                    style={{ cursor: 'pointer' }}
                   >
                     <span
                       className="month-task-dot-icon"
@@ -69,11 +71,6 @@ export default function MonthView() {
                   </div>
                 );
               })}
-              {remainingTasks > 0 && (
-                <div className="month-tasks-more">
-                  +{remainingTasks} more
-                </div>
-              )}
             </div>
           </div>
         );

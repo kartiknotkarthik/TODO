@@ -400,7 +400,7 @@ input, textarea {
   flex-direction: column;
   transition: all var(--transition-normal);
   overflow: hidden;
-  min-height: 320px;
+  height: 400px;
 }
 
 .day-card:hover {
@@ -805,12 +805,22 @@ input, textarea {
 
 .month-day-cell {
   background: white;
-  min-height: 100px;
+  height: 130px;
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
   transition: background var(--transition-fast);
   cursor: pointer;
+  overflow-y: auto;
+}
+
+.month-day-cell::-webkit-scrollbar {
+  width: 3px;
+}
+
+.month-day-cell::-webkit-scrollbar-thumb {
+  background: var(--slate-200);
+  border-radius: 2px;
 }
 
 .month-day-cell:hover {
