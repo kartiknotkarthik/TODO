@@ -389,6 +389,7 @@ input, textarea {
   grid-template-columns: repeat(7, 1fr);
   gap: 12px;
   min-height: 0;
+  flex-shrink: 0;
 }
 
 /* --- Day Card --- */
@@ -790,6 +791,7 @@ input, textarea {
   border-radius: var(--card-radius);
   overflow: hidden;
   border: 1px solid var(--slate-200);
+  flex-shrink: 0;
 }
 
 .month-day-header {

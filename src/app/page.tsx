@@ -78,8 +78,8 @@ export default function Home() {
             <DayView />
           )}
 
-          {/* Bottom panels are displayed here in Week & Month view, but inside DayView sidebar in Day view */}
-          {viewMode !== 'day' && (
+          {/* Bottom panels are displayed only in Week view to prevent overlap/clutter in Month view */}
+          {viewMode === 'week' && (
             <div className="bottom-panels">
               <CarryForwardPanel />
               <ProgressPanel />
