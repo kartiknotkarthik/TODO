@@ -6,7 +6,7 @@ import Header from '@/components/layout/Header';
 import WeekView from '@/components/views/WeekView';
 import MonthView from '@/components/views/MonthView';
 import DayView from '@/components/views/DayView';
-import CarryForwardPanel from '@/components/panels/CarryForwardPanel';
+import ProcrastinationBar from '@/components/panels/ProcrastinationBar';
 import ProgressPanel from '@/components/panels/ProgressPanel';
 import AddTaskModal from '@/components/modals/AddTaskModal';
 import { useTaskStore } from '@/lib/store';
@@ -81,7 +81,7 @@ export default function Home() {
           {/* Bottom panels are displayed only in Week view to prevent overlap/clutter in Month view */}
           {viewMode === 'week' && (
             <div className="bottom-panels">
-              <CarryForwardPanel />
+              <ProcrastinationBar />
               <ProgressPanel />
             </div>
           )}

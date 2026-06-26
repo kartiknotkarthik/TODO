@@ -1,10 +1,11 @@
 import {
+  addDays,
   differenceInCalendarDays,
   parseISO,
   isBefore,
+  isAfter,
   isWithinInterval,
   startOfDay,
-  format,
 } from 'date-fns';
 
 import type { Task } from '@/types';
@@ -53,82 +54,100 @@ export function getDelayLabel(delayDays: number): string {
 }
 
 /**
- * Returns tasks that should be visible on a given date:
- * - Tasks whose dueDate matches the date
- * - Uncompleted tasks (as of targetDay) whose dueDate is before the date (carried forward)
- * - Completed tasks (as of targetDay) that were completed during the current week (shown as translucent)
+ * Returns the calendar day a task currently occupies.
+ * Incomplete overdue tasks advance one day at a time (never skipping ahead of `asOfDay`).
  */
-export function getTasksForDate(tasks: Task[], date: Date): Task[] {
-  const targetDay = startOfDay(date);
-  const weekStart = startOfWeek(date);
-  const weekEnd = endOfWeek(date);
+export function getCarrySlot(task: Task, asOfDay: Date): Date {
+  const dueDate = startOfDay(parseISO(task.dueDate));
+  const asOf = startOfDay(asOfDay);
 
-  return tasks.filter((task) => {
-    const taskDueDate = startOfDay(parseISO(task.dueDate));
+  if (isBefore(asOf, dueDate)) {
+    return dueDate;
+  }
 
-    // Case 1: Original due date matches targetDay
-    if (isSameDay(taskDueDate, targetDay)) {
-      return true;
-    }
+  if (task.completed && task.completedAt) {
+    return startOfDay(parseISO(task.completedAt));
+  }
 
-    // Helper: Determine if task was completed on or before targetDay
-    let isCompletedAsOfDate = false;
-    let completedDate: Date | null = null;
-    if (task.completed && task.completedAt) {
-      completedDate = startOfDay(parseISO(task.completedAt));
-      if (!isBefore(targetDay, completedDate)) {
-        isCompletedAsOfDate = true;
-      }
-    }
-
-    // Case 2: Uncompleted as of targetDay, and due date is before targetDay (uncompleted carry-forward)
-    if (!isCompletedAsOfDate && isBefore(taskDueDate, targetDay)) {
-      return true;
-    }
-
-    // Case 3: Completed as of targetDay, due date is before targetDay,
-    // and completion date is in the same week as targetDay (completed carry-forward till end of week)
-    if (isCompletedAsOfDate && completedDate && isBefore(taskDueDate, targetDay)) {
-      return isWithinInterval(completedDate, {
-        start: startOfDay(weekStart),
-        end: startOfDay(weekEnd),
-      });
-    }
-
-    return false;
-  });
+  let slot = dueDate;
+  let day = dueDate;
+  while (isBefore(day, asOf)) {
+    slot = addDays(slot, 1);
+    day = addDays(day, 1);
+  }
+  return slot;
 }
 
 /**
- * Returns tasks that have been carried forward past their original due date,
- * along with delay information.
+ * Returns tasks that should be visible on a given date:
+ * - Scheduled tasks appear only on their due date
+ * - Incomplete overdue tasks appear on a single carry slot (today), not on every future day
+ * - Completed tasks appear on their completion day and original due date
  */
-export function getCarriedForwardTasks(
+export function getTasksForDate(tasks: Task[], date: Date): Task[] {
+  const targetDay = startOfDay(date);
+  const today = startOfDay(new Date());
+
+  return tasks.filter((task) => {
+    const dueDate = startOfDay(parseISO(task.dueDate));
+
+    if (task.completed && task.completedAt) {
+      const completedDate = startOfDay(parseISO(task.completedAt));
+      if (isSameDay(completedDate, targetDay)) return true;
+      if (isSameDay(dueDate, targetDay) && !isSameDay(dueDate, completedDate)) return true;
+      return false;
+    }
+
+    // Future scheduled tasks: visible on their due date only
+    if (isAfter(dueDate, today)) {
+      return isSameDay(dueDate, targetDay);
+    }
+
+    // Overdue carry-forward must not appear on days that have not arrived yet
+    if (isBefore(today, targetDay)) {
+      return false;
+    }
+
+    const slot = getCarrySlot(task, today);
+    return isSameDay(slot, targetDay);
+  });
+}
+
+export interface ProcrastinationEntry {
+  task: Task;
+  daysTaken: number;
+  isPending: boolean;
+}
+
+/**
+ * Returns tasks with procrastination metrics: days pending (incomplete) or days taken to complete.
+ */
+export function getProcrastinationTasks(
   tasks: Task[],
   currentDate: Date
-): { task: Task; delayDays: number; carriedTo: string }[] {
+): ProcrastinationEntry[] {
   const today = startOfDay(currentDate);
 
   return tasks
-    .filter((task) => {
-      // Determine if task was completed on or before today
-      let isCompletedAsOfDate = false;
+    .map((task): ProcrastinationEntry | null => {
+      const dueDate = startOfDay(parseISO(task.originalDueDate));
+
       if (task.completed && task.completedAt) {
         const completedDate = startOfDay(parseISO(task.completedAt));
-        if (!isBefore(today, completedDate)) {
-          isCompletedAsOfDate = true;
-        }
+        const daysTaken = differenceInCalendarDays(completedDate, dueDate);
+        if (daysTaken <= 0) return null;
+        return { task, daysTaken, isPending: false };
       }
-      if (isCompletedAsOfDate) return false;
 
-      const dueDate = parseISO(task.dueDate);
-      return isBefore(startOfDay(dueDate), today);
+      if (isBefore(dueDate, today)) {
+        const daysTaken = differenceInCalendarDays(today, dueDate);
+        return { task, daysTaken, isPending: true };
+      }
+
+      return null;
     })
-    .map((task) => {
-      const delayDays = getDelayDays(task, currentDate);
-      const carriedTo = format(today, 'yyyy-MM-dd');
-      return { task, delayDays, carriedTo };
-    });
+    .filter((entry): entry is ProcrastinationEntry => entry !== null)
+    .sort((a, b) => b.daysTaken - a.daysTaken);
 }
 
 /**
@@ -272,25 +291,12 @@ export function getTaskVisualState(task: Task, date: Date): TaskVisualState {
     };
   }
 
-  // Is it carried forward?
+  // Carried forward to today (single slot)
   if (isBefore(taskDueDate, targetDay)) {
-    const delayDays = differenceInCalendarDays(targetDay, taskDueDate);
-    let highlightClass = '';
-    if (delayDays === 0) {
-      highlightClass = 'delay-highlight-green';
-    } else if (delayDays === 1) {
-      highlightClass = 'delay-highlight-lime';
-    } else if (delayDays === 2) {
-      highlightClass = 'delay-highlight-amber';
-    } else if (delayDays === 3) {
-      highlightClass = 'delay-highlight-orange';
-    } else {
-      highlightClass = 'delay-highlight-red';
-    }
-
+    const gap = differenceInCalendarDays(targetDay, taskDueDate);
     return {
       isCompleted: false,
-      highlightClass,
+      highlightClass: gap <= 3 ? 'delayed-highlight-orange' : 'delayed-highlight-red',
       isTranslucent: false,
     };
   }

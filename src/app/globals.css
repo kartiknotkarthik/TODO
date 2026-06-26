@@ -713,54 +713,67 @@ input, textarea {
   flex-shrink: 0;
 }
 
-/* --- Carry Forward Panel --- */
-.carry-forward-panel {
+/* --- Procrastination Bar --- */
+.procrastination-bar {
   background: white;
   border-radius: var(--card-radius);
   border: 1px solid var(--slate-200);
   padding: 20px 24px;
 }
 
-.carry-forward-panel h3 {
+.procrastination-bar h3 {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--slate-900);
   margin-bottom: 16px;
 }
 
-.carry-forward-list {
+.procrastination-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
-.carry-forward-item {
-  display: grid;
-  grid-template-columns: 8px 1fr auto auto;
-  gap: 12px;
+.procrastination-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.procrastination-item-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 6px 0;
+  gap: 12px;
 }
 
-.carry-forward-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.carry-forward-title {
+.procrastination-title {
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--slate-700);
 }
 
-.carry-forward-delay {
+.procrastination-days {
   font-size: 0.85rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
-.carry-forward-date {
-  font-size: 0.85rem;
+.procrastination-bar-track {
+  height: 6px;
+  background: var(--slate-100);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.procrastination-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease-out;
+}
+
+.procrastination-date {
+  font-size: 0.8rem;
   color: var(--slate-400);
 }
 

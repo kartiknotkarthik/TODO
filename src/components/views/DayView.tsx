@@ -5,7 +5,7 @@ import { useTaskStore } from '@/lib/store';
 import { getTasksForDate } from '@/lib/taskUtils';
 import { format, formatISO } from 'date-fns';
 import TaskItem from '@/components/ui/TaskItem';
-import CarryForwardPanel from '@/components/panels/CarryForwardPanel';
+import ProcrastinationBar from '@/components/panels/ProcrastinationBar';
 import ProgressPanel from '@/components/panels/ProgressPanel';
 import { Plus, Calendar } from 'lucide-react';
 
@@ -101,7 +101,7 @@ export default function DayView() {
       </div>
 
       <div className="day-view-sidebar">
-        <CarryForwardPanel />
+        <ProcrastinationBar />
         <ProgressPanel />
       </div>
     </div>
