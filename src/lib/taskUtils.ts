@@ -55,8 +55,8 @@ export function getDelayLabel(delayDays: number): string {
 /**
  * Returns tasks that should be visible on a given date:
  * - Tasks whose dueDate matches the date
- * - Uncompleted tasks whose dueDate is before the date (carried forward)
- * - Completed tasks that were completed during the current week (shown as translucent)
+ * - Uncompleted tasks (as of targetDay) whose dueDate is before the date (carried forward)
+ * - Completed tasks (as of targetDay) that were completed during the current week (shown as translucent)
  */
 export function getTasksForDate(tasks: Task[], date: Date): Task[] {
   const targetDay = startOfDay(date);
@@ -64,30 +64,35 @@ export function getTasksForDate(tasks: Task[], date: Date): Task[] {
   const weekEnd = endOfWeek(date);
 
   return tasks.filter((task) => {
-    const taskDueDate = parseISO(task.dueDate);
+    const taskDueDate = startOfDay(parseISO(task.dueDate));
 
-    // Tasks whose dueDate matches the given date
+    // Case 1: Original due date matches targetDay
     if (isSameDay(taskDueDate, targetDay)) {
       return true;
     }
 
-    // Uncompleted tasks whose dueDate is before the date (carried forward)
-    if (!task.completed && isBefore(startOfDay(taskDueDate), targetDay)) {
+    // Helper: Determine if task was completed on or before targetDay
+    let isCompletedAsOfDate = false;
+    let completedDate: Date | null = null;
+    if (task.completed && task.completedAt) {
+      completedDate = startOfDay(parseISO(task.completedAt));
+      if (!isBefore(targetDay, completedDate)) {
+        isCompletedAsOfDate = true;
+      }
+    }
+
+    // Case 2: Uncompleted as of targetDay, and due date is before targetDay (uncompleted carry-forward)
+    if (!isCompletedAsOfDate && isBefore(taskDueDate, targetDay)) {
       return true;
     }
 
-    // Completed tasks that were completed during the current week
-    if (task.completed && task.completedAt) {
-      const completedDate = parseISO(task.completedAt);
-      if (
-        isBefore(startOfDay(taskDueDate), targetDay) &&
-        isWithinInterval(startOfDay(completedDate), {
-          start: startOfDay(weekStart),
-          end: startOfDay(weekEnd),
-        })
-      ) {
-        return true;
-      }
+    // Case 3: Completed as of targetDay, due date is before targetDay,
+    // and completion date is in the same week as targetDay (completed carry-forward till end of week)
+    if (isCompletedAsOfDate && completedDate && isBefore(taskDueDate, targetDay)) {
+      return isWithinInterval(completedDate, {
+        start: startOfDay(weekStart),
+        end: startOfDay(weekEnd),
+      });
     }
 
     return false;
@@ -106,7 +111,16 @@ export function getCarriedForwardTasks(
 
   return tasks
     .filter((task) => {
-      if (task.completed) return false;
+      // Determine if task was completed on or before today
+      let isCompletedAsOfDate = false;
+      if (task.completed && task.completedAt) {
+        const completedDate = startOfDay(parseISO(task.completedAt));
+        if (!isBefore(today, completedDate)) {
+          isCompletedAsOfDate = true;
+        }
+      }
+      if (isCompletedAsOfDate) return false;
+
       const dueDate = parseISO(task.dueDate);
       return isBefore(startOfDay(dueDate), today);
     })
@@ -140,7 +154,15 @@ export function getWeeklyProgress(
     }
 
     // Uncompleted task carried into this week (due before week start)
-    if (!task.completed && isBefore(dueDayStart, start)) {
+    let isCompletedBeforeWeekStart = false;
+    if (task.completed && task.completedAt) {
+      const completedDate = startOfDay(parseISO(task.completedAt));
+      if (isBefore(completedDate, start)) {
+        isCompletedBeforeWeekStart = true;
+      }
+    }
+
+    if (!isCompletedBeforeWeekStart && isBefore(dueDayStart, start)) {
       return true;
     }
 
@@ -175,29 +197,6 @@ export function getWeeklyProgress(
 }
 
 /**
- * Returns true if the task is completed but being shown on a carry-forward
- * day within the same week. Used to render the task as translucent.
- */
-export function shouldShowAsCompleted(task: Task, date: Date): boolean {
-  if (!task.completed || !task.completedAt) return false;
-
-  const taskDueDate = parseISO(task.dueDate);
-
-  // Only applies to carried-forward tasks (due before the given date)
-  if (!isBefore(startOfDay(taskDueDate), startOfDay(date))) return false;
-
-  const completedDate = parseISO(task.completedAt);
-  const weekStart = startOfWeek(date);
-  const weekEnd = endOfWeek(date);
-
-  // Completed within the same week as the viewing date
-  return isWithinInterval(startOfDay(completedDate), {
-    start: startOfDay(weekStart),
-    end: startOfDay(weekEnd),
-  });
-}
-
-/**
  * Returns true if the task can be checked/unchecked on the viewing date.
  * Toggling is only permitted if the viewingDate is within [-1, 0, 1] days of today.
  */
@@ -208,22 +207,99 @@ export function isTaskEditable(viewingDate: Date): boolean {
   return diff >= -1 && diff <= 1;
 }
 
-/**
- * Returns 'orange' if the task is viewed on its original due date and the days gap from today is <= 3 days.
- * Returns 'red' if the gap is > 3 days.
- * Returns null if the task is completed, viewed on a different day, or not overdue.
- */
-export function getOriginalDayHighlight(task: Task, viewingDate: Date): 'orange' | 'red' | null {
-  if (task.completed) return null;
-
-  const originalDue = startOfDay(parseISO(task.dueDate));
-  if (!isSameDay(originalDue, startOfDay(viewingDate))) return null;
-
-  const today = startOfDay(new Date());
-  const gap = differenceInCalendarDays(today, originalDue);
-
-  if (gap <= 0) return null; // not overdue relative to today
-
-  return gap <= 3 ? 'orange' : 'red';
+export interface TaskVisualState {
+  isCompleted: boolean;
+  highlightClass: string;
+  isTranslucent: boolean;
 }
+
+/**
+ * Computes completion status and CSS class styling for a task relative to the viewing date.
+ */
+export function getTaskVisualState(task: Task, date: Date): TaskVisualState {
+  const targetDay = startOfDay(date);
+  const taskDueDate = startOfDay(parseISO(task.dueDate));
+  const today = startOfDay(new Date());
+
+  // 1. Determine completion status as of the viewing date
+  let isCompletedAsOfDate = false;
+  let completedDate: Date | null = null;
+  if (task.completed && task.completedAt) {
+    completedDate = startOfDay(parseISO(task.completedAt));
+    if (!isBefore(targetDay, completedDate)) {
+      isCompletedAsOfDate = true;
+    }
+  }
+
+  // 2. Determine highlighting
+  if (isCompletedAsOfDate && completedDate) {
+    const isDayOfCompletion = isSameDay(targetDay, completedDate);
+    if (isDayOfCompletion) {
+      // Completed on this viewing date -> light green highlight, not translucent
+      return {
+        isCompleted: true,
+        highlightClass: 'completed-highlight-green',
+        isTranslucent: false,
+      };
+    } else {
+      // Old completed task -> translucent, strikethrough, highlighted based on delay at completion:
+      // Red highlight if it was completed delayed; Green highlight if completed on-time.
+      const wasDelayed = isBefore(taskDueDate, completedDate);
+      return {
+        isCompleted: true,
+        highlightClass: wasDelayed ? 'old-completed-highlight-red' : 'old-completed-highlight-green',
+        isTranslucent: true,
+      };
+    }
+  }
+
+  // 3. Task is uncompleted as of date
+  // Is it viewed on its original due date?
+  if (isSameDay(taskDueDate, targetDay)) {
+    const gap = differenceInCalendarDays(today, taskDueDate);
+    if (gap > 0) {
+      // Original date overdue -> Orange if gap <= 3 days, Red if gap > 3 days
+      return {
+        isCompleted: false,
+        highlightClass: gap <= 3 ? 'delayed-highlight-orange' : 'delayed-highlight-red',
+        isTranslucent: false,
+      };
+    }
+    return {
+      isCompleted: false,
+      highlightClass: '',
+      isTranslucent: false,
+    };
+  }
+
+  // Is it carried forward?
+  if (isBefore(taskDueDate, targetDay)) {
+    const delayDays = differenceInCalendarDays(targetDay, taskDueDate);
+    let highlightClass = '';
+    if (delayDays === 0) {
+      highlightClass = 'delay-highlight-green';
+    } else if (delayDays === 1) {
+      highlightClass = 'delay-highlight-lime';
+    } else if (delayDays === 2) {
+      highlightClass = 'delay-highlight-amber';
+    } else if (delayDays === 3) {
+      highlightClass = 'delay-highlight-orange';
+    } else {
+      highlightClass = 'delay-highlight-red';
+    }
+
+    return {
+      isCompleted: false,
+      highlightClass,
+      isTranslucent: false,
+    };
+  }
+
+  return {
+    isCompleted: false,
+    highlightClass: '',
+    isTranslucent: false,
+  };
+}
+
 

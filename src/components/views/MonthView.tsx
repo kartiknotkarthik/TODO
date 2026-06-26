@@ -3,7 +3,7 @@
 import React from 'react';
 import { useTaskStore } from '@/lib/store';
 import { getMonthWeeks, isToday } from '@/lib/dateUtils';
-import { getTasksForDate, getDelayDays, getDelayColor, isTaskEditable } from '@/lib/taskUtils';
+import { getTasksForDate, isTaskEditable, getTaskVisualState } from '@/lib/taskUtils';
 import { format } from 'date-fns';
 
 export default function MonthView() {
@@ -49,12 +49,11 @@ export default function MonthView() {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, overflow: 'hidden' }}>
               {visibleTasks.map((task) => {
-                const delayDays = getDelayDays(task, date);
-                const color = task.completed ? 'var(--slate-300)' : getDelayColor(delayDays);
+                const { isCompleted, highlightClass, isTranslucent } = getTaskVisualState(task, date);
                 return (
                   <div
                     key={task.id}
-                    className={`month-task-dot ${task.completed ? 'completed' : ''}`}
+                    className={`month-task-dot ${isCompleted ? 'completed' : ''} ${highlightClass}`}
                     title={
                       isEditable 
                         ? `${task.title} (Click to toggle completion)`
@@ -68,13 +67,9 @@ export default function MonthView() {
                     }}
                     style={{ 
                       cursor: isEditable ? 'pointer' : 'default',
-                      opacity: isEditable ? 1 : 0.7
+                      opacity: isTranslucent ? 0.55 : 1
                     }}
                   >
-                    <span
-                      className="month-task-dot-icon"
-                      style={{ backgroundColor: color }}
-                    />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {task.title}
                     </span>

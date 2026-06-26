@@ -4,9 +4,7 @@ import React, { useState } from 'react';
 import { Check, Trash2 } from 'lucide-react';
 import type { Task } from '@/types';
 import { useTaskStore } from '@/lib/store';
-import { getDelayDays, getDelayColor, shouldShowAsCompleted, isTaskEditable, getOriginalDayHighlight } from '@/lib/taskUtils';
-import { parseISO } from 'date-fns';
-import { isSameDay } from '@/lib/dateUtils';
+import { isTaskEditable, getTaskVisualState } from '@/lib/taskUtils';
 
 interface TaskItemProps {
   task: Task;
@@ -18,35 +16,14 @@ export default function TaskItem({ task, viewingDate }: TaskItemProps) {
   const deleteTask = useTaskStore((state) => state.deleteTask);
   const [justChecked, setJustChecked] = useState(false);
 
-  const isCompletedOnOriginalDate = task.completed && isSameDay(parseISO(task.dueDate), viewingDate);
-  const isCompletedCarriedForward = shouldShowAsCompleted(task, viewingDate);
-  
-  let itemClass = '';
-  if (isCompletedOnOriginalDate) {
-    itemClass = 'completed';
-  } else if (isCompletedCarriedForward) {
-    itemClass = 'carried-forward';
-  }
-
   const isEditable = isTaskEditable(viewingDate);
-  const highlight = getOriginalDayHighlight(task, viewingDate);
-
-  let highlightClass = '';
-  if (highlight === 'orange') {
-    highlightClass = 'delayed-highlight-orange';
-  } else if (highlight === 'red') {
-    highlightClass = 'delayed-highlight-red';
-  }
-
-  const delayDays = getDelayDays(task, viewingDate);
-  const showDelayDot = !task.completed && delayDays > 0;
-  const delayColor = getDelayColor(delayDays);
+  const { isCompleted, highlightClass, isTranslucent } = getTaskVisualState(task, viewingDate);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isEditable) return;
 
-    if (!task.completed) {
+    if (!isCompleted) {
       setJustChecked(true);
       setTimeout(() => setJustChecked(false), 300);
     }
@@ -58,26 +35,24 @@ export default function TaskItem({ task, viewingDate }: TaskItemProps) {
     deleteTask(task.id);
   };
 
+  let itemClass = '';
+  if (isCompleted) {
+    itemClass = isTranslucent ? 'carried-forward' : 'completed';
+  }
+
   return (
     <div 
       className={`task-item ${itemClass} ${highlightClass} ${!isEditable ? 'readonly' : ''}`}
       onClick={isEditable ? handleToggle : undefined}
+      style={{ opacity: isTranslucent ? 0.55 : 1 }}
     >
       <div 
-        className={`task-checkbox ${task.completed ? 'checked' : ''} ${justChecked ? 'just-checked' : ''} ${!isEditable ? 'disabled' : ''}`}
+        className={`task-checkbox ${isCompleted ? 'checked' : ''} ${justChecked ? 'just-checked' : ''} ${!isEditable ? 'disabled' : ''}`}
         title={!isEditable ? "Toggling task is only allowed for yesterday, today, or tomorrow" : undefined}
       >
-        {task.completed && <Check />}
+        {isCompleted && <Check />}
       </div>
       <span className="task-title">{task.title}</span>
-      
-      {showDelayDot && (
-        <div 
-          className="task-delay-dot" 
-          style={{ backgroundColor: delayColor }}
-          title={`Delayed by ${delayDays} day${delayDays > 1 ? 's' : ''}`}
-        />
-      )}
 
       <button 
         className="task-delete-btn"

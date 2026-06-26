@@ -623,18 +623,68 @@ input, textarea {
   height: 14px;
 }
 
-/* --- Task Delayed Highlights & Disabled Edit States --- */
-.task-item.delayed-highlight-orange {
-  background: rgba(245, 158, 11, 0.12) !important;
+/* --- Task Highlights & Disabled Edit States --- */
+.task-item.delay-highlight-green {
+  background: rgba(34, 197, 94, 0.08) !important;
+  border-left: 3px solid var(--green-500);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-left: 8px;
+}
+
+.task-item.delay-highlight-lime {
+  background: rgba(132, 204, 22, 0.08) !important;
+  border-left: 3px solid var(--lime-500);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-left: 8px;
+}
+
+.task-item.delay-highlight-amber {
+  background: rgba(245, 158, 11, 0.08) !important;
   border-left: 3px solid var(--amber-500);
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   padding-left: 8px;
 }
 
-.task-item.delayed-highlight-red {
+.task-item.delayed-highlight-orange,
+.task-item.delay-highlight-orange {
+  background: rgba(249, 115, 22, 0.08) !important;
+  border-left: 3px solid var(--orange-500);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-left: 8px;
+}
+
+.task-item.delayed-highlight-red,
+.task-item.delay-highlight-red {
   background: rgba(239, 68, 68, 0.08) !important;
   border-left: 3px solid var(--red-500);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-left: 8px;
+}
+
+.task-item.completed-highlight-green {
+  background: rgba(34, 197, 94, 0.12) !important;
+  border-left: 3px solid var(--green-500);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-left: 8px;
+}
+
+.task-item.old-completed-highlight-green {
+  background: rgba(34, 197, 94, 0.04) !important;
+  border-left: 3px solid rgba(34, 197, 94, 0.4);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-left: 8px;
+}
+
+.task-item.old-completed-highlight-red {
+  background: rgba(239, 68, 68, 0.04) !important;
+  border-left: 3px solid rgba(239, 68, 68, 0.4);
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   padding-left: 8px;
@@ -887,23 +937,69 @@ input, textarea {
 .month-task-dot {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 0;
+  padding: 2px 6px;
   font-size: 0.72rem;
-  color: var(--slate-600);
-  font-weight: 500;
-}
-
-.month-task-dot-icon {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  flex-shrink: 0;
+  color: var(--slate-700);
+  font-weight: 600;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  transition: all var(--transition-fast);
 }
 
 .month-task-dot.completed {
   text-decoration: line-through;
-  opacity: 0.5;
+  opacity: 0.55;
+}
+
+/* Month view highlights */
+.month-task-dot.delay-highlight-green {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: var(--green-600) !important;
+  border-left: 2px solid var(--green-500);
+}
+
+.month-task-dot.delay-highlight-lime {
+  background: rgba(132, 204, 22, 0.15) !important;
+  color: var(--lime-600) !important;
+  border-left: 2px solid var(--lime-500);
+}
+
+.month-task-dot.delay-highlight-amber {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: var(--amber-500) !important;
+  border-left: 2px solid var(--amber-500);
+}
+
+.month-task-dot.delayed-highlight-orange,
+.month-task-dot.delay-highlight-orange {
+  background: rgba(249, 115, 22, 0.15) !important;
+  color: var(--orange-500) !important;
+  border-left: 2px solid var(--orange-500);
+}
+
+.month-task-dot.delayed-highlight-red,
+.month-task-dot.delay-highlight-red {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: var(--red-600) !important;
+  border-left: 2px solid var(--red-500);
+}
+
+.month-task-dot.completed-highlight-green {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: var(--green-600) !important;
+  border-left: 2px solid var(--green-500);
+}
+
+.month-task-dot.old-completed-highlight-green {
+  background: rgba(34, 197, 94, 0.08) !important;
+  color: var(--green-600) !important;
+  border-left: 2px solid rgba(34, 197, 94, 0.4);
+}
+
+.month-task-dot.old-completed-highlight-red {
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: var(--red-600) !important;
+  border-left: 2px solid rgba(239, 68, 68, 0.4);
 }
 
 .month-tasks-more {
